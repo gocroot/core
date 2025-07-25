@@ -8,6 +8,7 @@ import (
 var (
 	once        sync.Once
 	MongoString string
+	PrivateKey  string
 )
 
 // SetEnv dengan protection untuk multiple calls
@@ -17,5 +18,6 @@ func SetEnv() {
 		// Set default configurations
 		// Initialize global settings
 		MongoString = os.Getenv("MONGOSTRING")
+		PrivateKey = os.Getenv("PRIVATEKEY")
 	})
 }
