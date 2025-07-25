@@ -9,8 +9,13 @@ import (
 
 func main() {
 	config.SetEnv()
+	println("Cek Environtment Variabel")
+	println("Port : " + config.Port)
+	println("Private Key : " + config.PrivateKey)
+	println("Public Key : " + config.PublicKey)
+	println("Mongostring : " + config.MongoString)
+
 	http.HandleFunc("/", routes.HandleRoutes)
-	println("Server Sudah Jalan")
-	err := http.ListenAndServe(":3000", nil)
+	err := http.ListenAndServe(config.Port, nil)
 	println(err.Error())
 }
