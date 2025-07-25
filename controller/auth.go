@@ -31,7 +31,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"Not Found","message":"User Not FOund"}`))
 }
 
-func GetProfile(w http.ResponseWriter, r *http.Request) {
+func GetUserName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	token := r.Header.Get("Token")
 	useridstring, err := watoken.DecodeGetId(config.PublicKey, token)
