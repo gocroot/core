@@ -10,6 +10,7 @@ import (
 func main() {
 	config.SetEnv()
 	http.HandleFunc("/", routes.HandleRoutes)
+	println("Server Sudah Jalan")
 	err := http.ListenAndServe(":3000", nil)
 	println(err.Error())
 }
