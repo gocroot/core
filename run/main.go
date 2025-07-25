@@ -10,5 +10,6 @@ import (
 func main() {
 	config.SetEnv()
 	http.HandleFunc("/", routes.HandleRoutes)
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":3000", nil)
+	println(err.Error())
 }
