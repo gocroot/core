@@ -12,12 +12,14 @@ func HandleRoutes(w http.ResponseWriter, r *http.Request) {
 		return // If it's a preflight request, return early.
 	}
 
-	var method, path string = r.Method, r.URL.Path
-	switch {
-	case method == "GET" && path == "/":
-		controller.GetHome(w, r)
-
+	switch r.Method {
+	case "GET":
+		switch r.URL.Path {
+		case "/":
+			controller.GetHome(w, r)
+		}
 	default:
 		controller.NotFound(w, r)
 	}
+
 }
