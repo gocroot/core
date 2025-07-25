@@ -9,6 +9,7 @@ var (
 	once        sync.Once
 	MongoString string
 	PrivateKey  string
+	PublicKey   string
 )
 
 // SetEnv dengan protection untuk multiple calls
@@ -19,5 +20,6 @@ func SetEnv() {
 		// Initialize global settings
 		MongoString = os.Getenv("MONGOSTRING")
 		PrivateKey = os.Getenv("PRIVATEKEY")
+		PublicKey = os.Getenv("PUBLICKEY")
 	})
 }

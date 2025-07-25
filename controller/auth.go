@@ -30,3 +30,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
 	w.Write([]byte(`{"status":"Not Found","message":"User Not FOund"}`))
 }
+
+func GetProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	token := r.Header.Get("Token")
+	useridstring, err := watoken.DecodeGetId(config.PublicKey, token)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte(`{"status":"Illegal Request","message":"Bad Request"}`))
+		return
+	}
+	//dummy login, jika auth benar user admin password admin123
+	if useridstring != "" {
+		w.WriteHeader(200)
+		response := fmt.Sprintf(`{"status":"Success","message":"Login successful","Username":"%s"}`, useridstring)
+		w.Write([]byte(response))
+		return
+	}
+	w.WriteHeader(200)
+	w.Write([]byte(`{"status":"Not Found","message":"User Not FOund"}`))
+}
