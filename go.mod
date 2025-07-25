@@ -4,7 +4,7 @@ go 1.24.5
 
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.9.2
-	github.com/whatsauth/watoken v0.1.7
+	github.com/whatsauth/watoken v0.1.8
 )
 
 require (
