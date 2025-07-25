@@ -18,6 +18,11 @@ func HandleRoutes(w http.ResponseWriter, r *http.Request) {
 		case "/":
 			controller.GetHome(w, r)
 		}
+	case "POST":
+		switch r.URL.Path {
+		case "/login":
+			controller.Login(w, r)
+		}
 	default:
 		controller.NotFound(w, r)
 	}
