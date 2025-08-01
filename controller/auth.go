@@ -43,7 +43,7 @@ func GetUserName(w http.ResponseWriter, r *http.Request) {
 	//dummy login, jika auth benar user admin password admin123
 	if useridstring != "" {
 		w.WriteHeader(200)
-		response := fmt.Sprintf(`{"status":"Success","message":"Token Valid","Username":"%s"}`, useridstring)
+		response := fmt.Sprintf(`{"status":"Success","message":"Token Valid","username":"%s"}`, useridstring)
 		w.Write([]byte(response))
 		return
 	}
