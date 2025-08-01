@@ -34,7 +34,7 @@ func SetAccessControlHeaders(w http.ResponseWriter, r *http.Request) bool {
 	// Handle preflight request (OPTIONS)
 	if r.Method == http.MethodOptions {
 		setCORSHeaders(w, origin)
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Login, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Token, Login, Authorization")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, OPTIONS")
 		w.Header().Set("Access-Control-Max-Age", "3600")
 		w.WriteHeader(http.StatusNoContent)
