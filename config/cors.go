@@ -6,7 +6,7 @@ import (
 
 // Menggunakan map untuk lookup O(1) - lebih efisien
 var allowedOrigins = map[string]bool{
-	"https://www.bukupedia.co.id":    true,
+	"https://jscroot.if.co.id":       true,
 	"https://naskah.bukupedia.co.id": true,
 	"https://bukupedia.co.id":        true,
 }
