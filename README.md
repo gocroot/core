@@ -25,6 +25,8 @@ cloudflared tunnel --url 127.0.0.1:3000
 
 ## Generate Token
 
+to generate PRIVATEKEY and PUBLICKEY
+
 Clone this repo:
 
 https://github.com/whatsauth/watoken
