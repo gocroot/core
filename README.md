@@ -87,3 +87,114 @@ jobs:
       - name: 'Cleaning Artifact Registry'
         run: 'gcloud artifacts repositories delete gcf-artifacts --location=asia-southeast2 --quiet'
 ```
+
+
+hasil improve (eksperimental)
+
+```yml
+name: Google Cloud Function Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  FUNCTION_NAME: gocroot
+  REGION: asia-southeast2
+
+jobs:
+  deploy:
+    name: Deploy Cloud Function
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Authenticate to Google Cloud
+      id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+    
+    - name: Configure gcloud project
+      run: |
+        gcloud config set project ${{ env.PROJECT_ID }}
+        gcloud config list
+    
+    - name: Deploy Cloud Function
+      run: |
+        gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+          --region=${{ env.REGION }} \
+          --allow-unauthenticated \
+          --entry-point=WebHook \
+          --gen2 \
+          --runtime=go121 \
+          --trigger-http \
+          --timeout=540s \
+          --memory=256Mi \
+          --min-instances=0 \
+          --max-instances=100 \
+          --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',PRIVATEKEY='${{ secrets.PRIVATEKEY }}',PUBLICKEY='${{ secrets.PUBLICKEY }}' \
+          --quiet
+    
+    - name: Verify deployment
+      run: |
+        echo "Checking function status..."
+        gcloud functions describe ${{ env.FUNCTION_NAME }} --region=${{ env.REGION }} --format="value(status)"
+        
+        echo "Function URL:"
+        gcloud functions describe ${{ env.FUNCTION_NAME }} --region=${{ env.REGION }} --format="value(serviceConfig.uri)"
+    
+    - name: Run health check
+      run: |
+        FUNCTION_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} --region=${{ env.REGION }} --format="value(serviceConfig.uri)")
+        echo "Testing function at: $FUNCTION_URL"
+        # Add your health check endpoint here
+        # curl -f "$FUNCTION_URL/health" || exit 1
+    
+    - name: Check recent logs (on failure)
+      if: failure()
+      run: |
+        echo "Checking recent logs for debugging..."
+        gcloud functions logs read ${{ env.FUNCTION_NAME }} --region=${{ env.REGION }} --limit=50
+
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: success()
+    
+    steps:
+    - name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+    
+    - name: Clean up old artifacts
+      run: |
+        # List repositories first
+        gcloud artifacts repositories list --location=${{ env.REGION }}
+        
+        # Only delete if gcf-artifacts exists and has old images
+        if gcloud artifacts repositories describe gcf-artifacts --location=${{ env.REGION }} &>/dev/null; then
+          echo "Cleaning up old container images..."
+          # Delete images older than 7 days
+          gcloud artifacts docker images list ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/gcf-artifacts \
+            --filter="createTime<'-P7D'" --format="value(IMAGE)" | \
+            xargs -r gcloud artifacts docker images delete --quiet
+        else
+          echo "No gcf-artifacts repository found, skipping cleanup"
+        fi
+```
