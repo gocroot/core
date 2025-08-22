@@ -23,6 +23,10 @@ winget install --id Cloudflare.cloudflared
 cloudflared tunnel --url 127.0.0.1:3000
 ```
 
+## Generate Token
+
+https://github.com/whatsauth/watoken
+
 ## CI / CD to Google Clound Function
 
 save as file into folder
