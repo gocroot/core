@@ -25,7 +25,14 @@ cloudflared tunnel --url 127.0.0.1:3000
 
 ## Generate Token
 
+Clone this repo:
+
 https://github.com/whatsauth/watoken
+
+run 
+```sh
+go test
+```
 
 ## CI / CD to Google Clound Function
 
