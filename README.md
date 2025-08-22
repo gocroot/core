@@ -221,6 +221,7 @@ var (
     
     // Database variables
     MongoDB     *mongo.Database
+    //opsional untuk pengecekan error koneksi
     MongoErr    error
 )
 
