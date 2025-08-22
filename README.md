@@ -198,3 +198,52 @@ jobs:
           echo "No gcf-artifacts repository found, skipping cleanup"
         fi
 ```
+
+## Database Connection
+
+Untuk koneksi database menggunakan mgdb:
+
+https://github.com/gocroot/mgdb
+
+```sh
+go get github.com/gocroot/mgdb
+```
+
+dalam config tambahkan variabel untuk menampung koneksi database mongo dengan errornya
+
+```go
+var (
+    once        sync.Once
+    Port        string
+    MongoString string
+    PrivateKey  string
+    PublicKey   string
+    
+    // Database variables
+    MongoDB     *mongo.Database
+    MongoErr    error
+)
+
+// SetEnv dengan protection untuk multiple calls
+func SetEnv() {
+	once.Do(func() {
+		// Load environment variables
+		// Set default configurations
+		// Initialize global settings
+		Port = ":3000"
+		MongoString = os.Getenv("MONGOSTRING")
+		PrivateKey = os.Getenv("PRIVATEKEY")
+		PublicKey = os.Getenv("PUBLICKEY")
+        var mconn = mgdb.DBInfo{
+            DBString: MongoString,
+            DBName:   "mydatabase",
+        }
+        MongoDB, MongoErr = mgdb.MongoConnect(mconn)
+        //opsional untuk pengecekan koneksi, bisa dilakukan di luar config
+        if MongoErr != nil {
+            log.Fatalf("Failed to connect to MongoDB: %v", MongoErr)
+        }
+	})
+}
+
+```
