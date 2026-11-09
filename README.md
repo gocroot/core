@@ -76,7 +76,7 @@ jobs:
             --allow-unauthenticated \
             --entry-point=WebHook \
             --gen2 \
-            --runtime=go125 \
+            --runtime=go127 \
             --trigger-http \
             --timeout=540s \
             --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',PRIVATEKEY='${{ secrets.PRIVATEKEY }}',PUBLICKEY='${{ secrets.PUBLICKEY }}'
@@ -136,7 +136,7 @@ jobs:
           --allow-unauthenticated \
           --entry-point=WebHook \
           --gen2 \
-          --runtime=go121 \
+          --runtime=go127 \
           --trigger-http \
           --timeout=540s \
           --memory=256Mi \

@@ -1,6 +1,6 @@
 module github.com/gocroot/core
 
-go 1.24.5
+go 1.27.0
 
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.9.2
