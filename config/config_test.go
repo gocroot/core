@@ -57,6 +57,9 @@ func TestCORSPreflightAndPlainRequest(t *testing.T) {
 	if SetAccessControlHeaders(rec, req) || rec.Header().Get("Access-Control-Allow-Origin") != "" {
 		t.Fatal("origin yang tidak diizinkan tidak boleh mendapat header CORS")
 	}
+	if rec.Header().Get("Vary") != "Origin" {
+		t.Fatal("Vary: Origin tetap harus dikirim untuk origin yang tidak diizinkan")
+	}
 }
 
 // Dijalankan dengan -race untuk memastikan perubahan origin aman saat request berjalan.

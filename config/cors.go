@@ -39,13 +39,14 @@ func isAllowedOrigin(origin string) bool {
 func setCORSHeaders(w http.ResponseWriter, origin string) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Add("Vary", "Origin")
 }
 
 // SetAccessControlHeaders mengatur header CORS.
 // Mengembalikan true jika request preflight (OPTIONS) sudah dijawab.
 // Request tanpa header Origin (server-to-server, curl) tetap diproses tanpa header CORS.
 func SetAccessControlHeaders(w http.ResponseWriter, r *http.Request) bool {
+	// Respons berbeda per Origin, jadi cache di tengah jalan harus membedakannya untuk semua respons.
+	w.Header().Add("Vary", "Origin")
 	origin := r.Header.Get("Origin")
 
 	// Jika origin kosong atau tidak diizinkan, tidak ada header CORS

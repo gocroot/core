@@ -11,8 +11,11 @@ import (
 const maxBodyBytes = 1 << 20
 
 // WriteJSON menulis header Content-Type, status code, lalu body JSON.
+// Respons API tidak boleh disimpan cache (bisa berisi token) dan tidak boleh di-sniff sebagai tipe lain.
 func WriteJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(body)
 }

@@ -28,6 +28,7 @@ Repo ini adalah **template repository**. Jangan di-import sebagai library. Buat 
 3. Jalankan:
    ```sh
    export PRIVATEKEY=... PUBLICKEY=... MONGOSTRING=...
+   export DEMO_USER=admin DEMO_PASSWORD=pilih-password   # opsional, login demo
    go run ./run
    ```
 
@@ -39,11 +40,19 @@ Repo ini adalah **template repository**. Jangan di-import sebagai library. Buat 
 | `MONGOSTRING` | Jika memakai MongoDB | Connection string MongoDB |
 | `PORT` | Tidak | Port server lokal/VPS, default `3000`. Di Cloud Functions port diatur otomatis |
 | `ALLOWED_ORIGINS` | Tidak | Origin CORS dipisah koma. Default: daftar di `config/cors.go` |
+| `DEMO_USER`, `DEMO_PASSWORD` | Tidak | Mengaktifkan login demo di `POST /login`. Jika salah satu kosong, login dibalas `503`. **Jangan diisi di produksi**: ganti `controller.Login` dengan pengecekan user di database |
 
 Saat start, `go run ./run` hanya mencetak status env (`terisi`/`KOSONG`), tidak pernah nilainya.
    Windows: `go run .\run\main.go`
 
 ## Test Login
+
+Isi `DEMO_USER` dan `DEMO_PASSWORD`, lalu:
+
+```sh
+curl -X POST http://localhost:3000/login -d '{"username":"admin","password":"pilih-password"}'
+curl http://localhost:3000/login -H "Token: <token dari login>"   # 200, atau 401 jika token tidak valid/kedaluwarsa
+```
 
 <img width="1920" height="1041" alt="image" src="https://github.com/user-attachments/assets/8b41b088-e9cf-4340-b4e6-fb5a79aa82d9" />
 

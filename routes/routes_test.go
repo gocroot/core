@@ -26,8 +26,14 @@ func do(t *testing.T, method, path, body string, header map[string]string) (int,
 			t.Fatalf("%s %s: body bukan JSON valid: %v (%q)", method, path, err, rec.Body.String())
 		}
 	}
-	if rec.Code != http.StatusNoContent && rec.Header().Get("Content-Type") != "application/json" {
-		t.Errorf("%s %s: Content-Type = %q", method, path, rec.Header().Get("Content-Type"))
+	if rec.Code != http.StatusNoContent {
+		h := rec.Header()
+		if h.Get("Content-Type") != "application/json" || h.Get("Cache-Control") != "no-store" || h.Get("X-Content-Type-Options") != "nosniff" {
+			t.Errorf("%s %s: header keamanan kurang: %v", method, path, h)
+		}
+	}
+	if !strings.Contains(strings.Join(rec.Header().Values("Vary"), ","), "Origin") {
+		t.Errorf("%s %s: Vary: Origin harus selalu ada", method, path)
 	}
 	return rec.Code, resp
 }
@@ -50,8 +56,21 @@ func TestRoutes(t *testing.T) {
 	}
 }
 
+func TestLoginDisabledWithoutDemoEnv(t *testing.T) {
+	config.DemoUser, config.DemoPassword = "", ""
+	if code, _ := do(t, http.MethodPost, "/login", `{"username":"admin","password":"admin123"}`, nil); code != http.StatusServiceUnavailable {
+		t.Errorf("tanpa DEMO_USER/DEMO_PASSWORD = %d, want 503", code)
+	}
+	config.DemoUser = "admin" // hanya satu yang terisi tetap mati
+	if code, _ := do(t, http.MethodPost, "/login", `{"username":"admin","password":""}`, nil); code != http.StatusServiceUnavailable {
+		t.Errorf("DEMO_PASSWORD kosong = %d, want 503", code)
+	}
+}
+
 func TestLoginFlow(t *testing.T) {
 	config.PrivateKey, config.PublicKey = watoken.GenerateKey()
+	config.DemoUser, config.DemoPassword = "admin", "rahasia-demo"
+	t.Cleanup(func() { config.DemoUser, config.DemoPassword = "", "" })
 
 	if code, _ := do(t, http.MethodPost, "/login", "bukan json", nil); code != http.StatusBadRequest {
 		t.Errorf("body rusak = %d, want 400", code)
@@ -59,21 +78,31 @@ func TestLoginFlow(t *testing.T) {
 	if code, _ := do(t, http.MethodPost, "/login", strings.Repeat(" ", 2<<20)+"{}", nil); code != http.StatusBadRequest {
 		t.Errorf("body > 1 MiB = %d, want 400", code)
 	}
-	if code, _ := do(t, http.MethodPost, "/login", `{"username":"admin","password":"salah"}`, nil); code != http.StatusNotFound {
-		t.Errorf("password salah = %d, want 404", code)
+	for _, body := range []string{
+		`{"username":"admin","password":"salah"}`,
+		`{"username":"admin","password":"admin123"}`, // password lama tidak lagi berlaku
+		`{"username":"bukan","password":"rahasia-demo"}`,
+		`{"username":"admin","password":"rahasia-dem"}`, // prefix tidak cukup
+	} {
+		if code, _ := do(t, http.MethodPost, "/login", body, nil); code != http.StatusNotFound {
+			t.Errorf("kredensial salah %s = %d, want 404", body, code)
+		}
 	}
 
-	code, resp := do(t, http.MethodPost, "/login", `{"username":"admin","password":"admin123"}`, nil)
+	code, resp := do(t, http.MethodPost, "/login", `{"username":"admin","password":"rahasia-demo"}`, nil)
 	if code != http.StatusOK || resp.Token == "" {
 		t.Fatalf("login benar = %d, token=%q", code, resp.Token)
 	}
 
-	code, resp = do(t, http.MethodGet, "/login", "", map[string]string{"Token": resp.Token})
+	token := resp.Token
+	code, resp = do(t, http.MethodGet, "/login", "", map[string]string{"Token": token})
 	if code != http.StatusOK || resp.Username != "admin" {
 		t.Errorf("cek token = %d, username=%q", code, resp.Username)
 	}
-	if code, _ := do(t, http.MethodGet, "/login", "", map[string]string{"Token": "token-palsu"}); code != http.StatusBadRequest {
-		t.Errorf("token palsu = %d, want 400", code)
+	for _, tok := range []string{"token-palsu", "", token[:len(token)-4] + "AAAA"} {
+		if code, _ := do(t, http.MethodGet, "/login", "", map[string]string{"Token": tok}); code != http.StatusUnauthorized {
+			t.Errorf("token tidak valid %q = %d, want 401", tok, code)
+		}
 	}
 }
 
