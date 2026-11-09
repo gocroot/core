@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gocroot/core/config"
@@ -11,42 +9,33 @@ import (
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	var loginauth models.LoginAuth
-	err := json.NewDecoder(r.Body).Decode(&loginauth)
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte(`{"status":"Illegal Request","message":"Bad Request"}`))
+	if err := DecodeJSON(w, r, &loginauth); err != nil {
+		WriteJSON(w, http.StatusBadRequest, models.Response{Status: "Illegal Request", Message: "Bad Request"})
 		return
 	}
 	//dummy login, jika auth benar user admin password admin123
-	if loginauth.UserName == "admin" && loginauth.Password == "admin123" {
-		w.WriteHeader(200)
-		tokenstring, _ := watoken.Encode(loginauth.UserName, config.PrivateKey)
-		response := fmt.Sprintf(`{"status":"Success","message":"Login successful","token":"%s"}`, tokenstring)
-		w.Write([]byte(response))
+	if loginauth.UserName != "admin" || loginauth.Password != "admin123" {
+		WriteJSON(w, http.StatusNotFound, models.Response{Status: "Not Found", Message: "User Not Found"})
 		return
 	}
-	w.WriteHeader(404)
-	w.Write([]byte(`{"status":"Not Found","message":"User Not FOund"}`))
+	tokenstring, err := watoken.Encode(loginauth.UserName, config.PrivateKey)
+	if err != nil {
+		WriteJSON(w, http.StatusInternalServerError, models.Response{Status: "Error", Message: "Gagal membuat token"})
+		return
+	}
+	WriteJSON(w, http.StatusOK, models.Response{Status: "Success", Message: "Login successful", Token: tokenstring})
 }
 
 func GetUserName(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	token := r.Header.Get("Token")
-	useridstring, err := watoken.DecodeGetId(config.PublicKey, token)
+	useridstring, err := watoken.DecodeGetId(config.PublicKey, r.Header.Get("Token"))
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte(`{"status":"Illegal Request","message":"Bad Request"}`))
+		WriteJSON(w, http.StatusBadRequest, models.Response{Status: "Illegal Request", Message: "Bad Request"})
 		return
 	}
-	//dummy login, jika auth benar user admin password admin123
-	if useridstring != "" {
-		w.WriteHeader(200)
-		response := fmt.Sprintf(`{"status":"Success","message":"Token Valid","username":"%s"}`, useridstring)
-		w.Write([]byte(response))
+	if useridstring == "" {
+		WriteJSON(w, http.StatusNotFound, models.Response{Status: "Not Found", Message: "User Not Found"})
 		return
 	}
-	w.WriteHeader(200)
-	w.Write([]byte(`{"status":"Not Found","message":"User Not FOund"}`))
+	WriteJSON(w, http.StatusOK, models.Response{Status: "Success", Message: "Token Valid", Username: useridstring})
 }

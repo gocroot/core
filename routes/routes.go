@@ -13,7 +13,7 @@ func HandleRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
 		switch r.URL.Path {
 		case "/":
 			controller.GetHome(w, r)
@@ -23,13 +23,15 @@ func HandleRoutes(w http.ResponseWriter, r *http.Request) {
 			controller.NotFound(w, r)
 		}
 
-	case "POST":
+	case http.MethodPost:
 		switch r.URL.Path {
 		case "/login":
 			controller.Login(w, r)
 		default:
 			controller.NotFound(w, r)
 		}
-	}
 
+	default:
+		controller.MethodNotAllowed(w, r)
+	}
 }

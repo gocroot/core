@@ -27,8 +27,20 @@ Repo ini adalah **template repository**. Jangan di-import sebagai library. Buat 
    Pemanggilan di kode tetap `controller.Login`, `models.LoginAuth`, dan seterusnya. Yang berubah hanya baris import.
 3. Jalankan:
    ```sh
+   export PRIVATEKEY=... PUBLICKEY=... MONGOSTRING=...
    go run ./run
    ```
+
+## Environment Variables
+
+| Env | Wajib | Keterangan |
+|---|---|---|
+| `PRIVATEKEY`, `PUBLICKEY` | Ya | Pasangan key PASETO untuk token login |
+| `MONGOSTRING` | Jika memakai MongoDB | Connection string MongoDB |
+| `PORT` | Tidak | Port server lokal/VPS, default `3000`. Di Cloud Functions port diatur otomatis |
+| `ALLOWED_ORIGINS` | Tidak | Origin CORS dipisah koma. Default: daftar di `config/cors.go` |
+
+Saat start, `go run ./run` hanya mencetak status env (`terisi`/`KOSONG`), tidak pernah nilainya.
    Windows: `go run .\run\main.go`
 
 ## Test Login
@@ -77,6 +89,7 @@ go test
 | `MONGOSTRING` | Connection string MongoDB |
 | `PRIVATEKEY` | Private key PASETO (lihat [Generate Token](#generate-token)) |
 | `PUBLICKEY` | Public key PASETO |
+| `ALLOWED_ORIGINS` | *(opsional)* Daftar origin CORS dipisah koma, misalnya `https://app.example.com,https://admin.example.com`. Jika kosong, dipakai daftar default di `config/cors.go` |
 
 3. Ganti `FUNCTION_NAME` dengan nama yang unik di project GCP-mu. Deploy ke nama yang sudah dipakai function lain akan **menimpa** function tersebut.
 
@@ -127,7 +140,7 @@ jobs:
             --memory=256Mi \
             --min-instances=0 \
             --max-instances=100 \
-            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',PRIVATEKEY='${{ secrets.PRIVATEKEY }}',PUBLICKEY='${{ secrets.PUBLICKEY }}' \
+            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',PRIVATEKEY='${{ secrets.PRIVATEKEY }}',PUBLICKEY='${{ secrets.PUBLICKEY }}',ALLOWED_ORIGINS='${{ secrets.ALLOWED_ORIGINS }}' \
             --quiet
 
       - name: Verify deployment
@@ -162,42 +175,38 @@ https://github.com/gocroot/mgdb
 go get github.com/gocroot/mgdb
 ```
 
-dalam config tambahkan variabel untuk menampung koneksi database mongo dengan errornya
+Di `config/config.go`, tambahkan variabel untuk menampung koneksi database dan error-nya, lalu isi di dalam `SetEnv()`:
 
 ```go
 var (
-    once        sync.Once
-    Port        string
-    MongoString string
-    PrivateKey  string
-    PublicKey   string
-    
-    // Database variables
-    MongoDB     *mongo.Database
-    //opsional untuk pengecekan error koneksi
-    MongoErr    error
+	// ... variabel yang sudah ada (Port, MongoString, PrivateKey, PublicKey)
+
+	// Database variables
+	MongoDB  *mongo.Database
+	MongoErr error
 )
 
-// SetEnv dengan protection untuk multiple calls
 func SetEnv() {
 	once.Do(func() {
-		// Load environment variables
-		// Set default configurations
-		// Initialize global settings
-		Port = ":3000"
-		MongoString = os.Getenv("MONGOSTRING")
-		PrivateKey = os.Getenv("PRIVATEKEY")
-		PublicKey = os.Getenv("PUBLICKEY")
-        var mconn = mgdb.DBInfo{
-            DBString: MongoString,
-            DBName:   "mydatabase",
-        }
-        MongoDB, MongoErr = mgdb.MongoConnect(mconn)
-        //opsional untuk pengecekan koneksi, bisa dilakukan di luar config
-        if MongoErr != nil {
-            log.Fatalf("Failed to connect to MongoDB: %v", MongoErr)
-        }
+		// ... pembacaan env yang sudah ada
+		MongoDB, MongoErr = mgdb.MongoConnect(mgdb.DBInfo{
+			DBString: MongoString,
+			DBName:   "mydatabase",
+		})
+		if MongoErr != nil {
+			log.Println("MongoDB belum terhubung:", MongoErr) // jangan log.Fatal
+		}
 	})
 }
-
 ```
+
+**Jangan pakai `log.Fatal` atau `panic` di sini.** Di Cloud Functions, `SetEnv()` dipanggil saat container start. Kalau proses mati di tahap itu, deploy gagal dengan error *Container Healthcheck failed* dan endpoint lain yang tidak butuh database ikut mati. Simpan error-nya, lalu cek di controller yang butuh database:
+
+```go
+if config.MongoErr != nil {
+	WriteJSON(w, http.StatusServiceUnavailable, models.Response{Status: "Error", Message: "Database tidak tersedia"})
+	return
+}
+```
+
+Pastikan juga `MONGOSTRING` berisi URI `mongodb://` atau `mongodb+srv://` yang valid. Nilai kosong atau rusak bisa membuat `mgdb` panic saat koneksi.
