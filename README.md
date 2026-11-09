@@ -67,7 +67,7 @@ go test
 
 ### Prasyarat
 
-1. Service account GCP dengan role **Cloud Functions Developer**, **Service Account User**, **Cloud Build Editor**, dan **Artifact Registry Administrator** (yang terakhir hanya diperlukan untuk langkah cleanup).
+1. Service account GCP dengan role **Cloud Functions Developer**, **Service Account User**, **Cloud Build Editor**, dan **Artifact Registry Administrator** (untuk langkah cleanup).
 2. Buat key JSON service account tersebut, lalu tambahkan **GitHub Secrets** di repo (Settings → Secrets and variables → Actions):
 
 | Secret | Isi |
@@ -137,42 +137,18 @@ jobs:
           # Endpoint "/" pada core mengembalikan {"status":"success","message":"Welcome"}
           curl -fsS "$URL/"
 
+      - name: Cleaning Artifact Registry
+        run: gcloud artifacts repositories delete gcf-artifacts --location=${{ env.REGION }} --quiet
+
       - name: Show recent logs (on failure)
         if: failure()
         run: gcloud functions logs read ${{ env.FUNCTION_NAME }} --region=${{ env.REGION }} --limit=50
-
-  cleanup:
-    name: Cleanup Old Images
-    runs-on: ubuntu-latest
-    needs: deploy
-    if: success()
-
-    steps:
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v3
-
-      - name: Delete images older than 7 days
-        run: |
-          REPO=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts
-          if gcloud artifacts repositories describe gcf-artifacts --location=${{ env.REGION }} &>/dev/null; then
-            gcloud artifacts docker images list "$REPO" \
-              --filter="createTime<-P7D" --format="value(IMAGE)" | \
-              xargs -r -n1 gcloud artifacts docker images delete --delete-tags --quiet
-          else
-            echo "Repository gcf-artifacts tidak ada, cleanup dilewati"
-          fi
 ```
 
 ### Catatan
 
 - **Runtime:** runtime Go yang didukung Google punya tanggal deprecation. Cek [jadwal runtime](https://docs.cloud.google.com/functions/docs/runtime-support), lalu naikkan `RUNTIME` bersama direktif `go` di `go.mod`. `go127` didukung sampai deprecation sekitar Agu/Sep 2027.
-- **Cleanup:** jangan menghapus seluruh repository `gcf-artifacts` setiap deploy. Repository itu dipakai bersama oleh semua function di region yang sama, jadi cukup hapus image lama seperti contoh di atas.
+- **Cleanup (hemat biaya):** setiap deploy Cloud Functions menghasilkan image buildpack berukuran ratusan MB di repository `gcf-artifacts`, padahal free tier Artifact Registry hanya 0,5 GB. Karena itu seluruh repository dihapus setelah deploy berhasil, dan storage tetap mendekati nol. Function yang sedang berjalan tidak terpengaruh, dan repository akan dibuat ulang otomatis pada deploy berikutnya. Konsekuensinya: rollback ke revisi lama tidak bisa dilakukan karena image-nya sudah terhapus. Kalau kamu butuh rollback, hapus langkah ini dan pantau penggunaan storage.
 - **Secret:** `--set-env-vars` membuat nilai secret terlihat di konfigurasi function (Console GCP). Untuk produksi, simpan secret di Secret Manager dan pakai `--set-secrets PRIVATEKEY=privatekey:latest,...`. Service account runtime function perlu role **Secret Manager Secret Accessor**.
 - **Uji di lokal** sebelum push: `go build ./... && go vet ./...`, lalu `go run ./run` dan buka `http://localhost:3000/`.
 
