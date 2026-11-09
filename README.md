@@ -70,6 +70,16 @@ winget install --id Cloudflare.cloudflared
 cloudflared tunnel --url 127.0.0.1:3000
 ```
 
+## Token PASETO
+
+Login di core menerbitkan token [PASETO](https://paseto.io) v4.public (Ed25519) lewat [whatsauth/watoken](https://github.com/whatsauth/watoken), bukan JWT:
+
+- Tidak ada header `alg` yang bisa diatur penyerang, jadi celah JWT seperti `alg: none` dan kebingungan RS256/HS256 tidak mungkin terjadi.
+- Kriptografi terkunci per versi (v4.public selalu Ed25519), programmer tidak perlu dan tidak bisa salah memilih algoritma.
+- Token ditandatangani dengan `PRIVATEKEY` dan diverifikasi dengan `PUBLICKEY`. Service lain cukup memegang `PUBLICKEY` untuk memeriksa token tanpa server auth pusat. Ini sifat tanda tangan asimetris (JWT RS256/EdDSA juga bisa), dan di PASETO menjadi satu-satunya pilihan.
+
+Token tidak bisa dicabut sebelum kedaluwarsa, jadi masa berlakunya pendek (`watoken.Encode` = 2 jam). Butuh logout paksa? Tambahkan denylist, jangan memperpanjang masa token. Simpan `PRIVATEKEY` hanya di service yang menerbitkan token.
+
 ## Generate Token
 
 to generate PRIVATEKEY and PUBLICKEY
