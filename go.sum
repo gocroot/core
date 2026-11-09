@@ -29,8 +29,8 @@ github.com/stretchr/testify v1.11.0 h1:ib4sjIrwZKxE5u/Japgo/7SJV3PvgjGiRNAvTVGqQ
 github.com/stretchr/testify v1.11.0/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
-github.com/whatsauth/watoken v0.1.8 h1:B1LpV0Uaf/tul6Jc+weOI58A7BBuNC8uSbY479UoCYw=
-github.com/whatsauth/watoken v0.1.8/go.mod h1:joHklaaUe1mJ1tYbouW7gFAcceyF48k7yJOPIkqDQdI=
+github.com/whatsauth/watoken v0.1.9 h1:ye4DEWAkHbrn50ZgazDJCbFVRxUqkgr+Q1nSyd5s18o=
+github.com/whatsauth/watoken v0.1.9/go.mod h1:TqGSmP8vipcwn1KbWdzzoGoOPFggmmrtlm59G9GyrCw=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
