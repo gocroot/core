@@ -1,10 +1,35 @@
 # core
 Core Backend Skeleton
 
+Repo ini adalah **template repository**. Jangan di-import sebagai library. Buat proyek sendiri darinya, lalu ganti nama modulnya.
 
-```sh
-go run .\run\main.go
-```
+## Mulai Proyek Baru
+
+1. Klik **Use this template → Create a new repository** di GitHub, atau jalankan:
+   ```sh
+   gh repo create myapi --template gocroot/core --private --clone
+   cd myapi
+   ```
+2. Ganti nama modul `github.com/gocroot/core` menjadi milikmu:
+   ```sh
+   go mod edit -module github.com/username/myapi
+   grep -rl 'github.com/gocroot/core' --include='*.go' . | xargs sed -i 's#github.com/gocroot/core#github.com/username/myapi#g'
+   go build ./...
+   ```
+   Windows (PowerShell):
+   ```powershell
+   go mod edit -module github.com/username/myapi
+   Get-ChildItem -Recurse -Filter *.go | ForEach-Object {
+       (Get-Content $_.FullName -Raw) -replace 'github.com/gocroot/core', 'github.com/username/myapi' | Set-Content $_.FullName -NoNewline
+   }
+   go build ./...
+   ```
+   Pemanggilan di kode tetap `controller.Login`, `models.LoginAuth`, dan seterusnya. Yang berubah hanya baris import.
+3. Jalankan:
+   ```sh
+   go run ./run
+   ```
+   Windows: `go run .\run\main.go`
 
 ## Test Login
 
