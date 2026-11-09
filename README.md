@@ -1,5 +1,5 @@
 # core
-Core Backend Skeleton
+Core Backend Skeleton dari [GoCroot](https://gocroot.if.co.id/). Dokumentasi lengkap: **https://gocroot.if.co.id/**
 
 Repo ini adalah **template repository**. Jangan di-import sebagai library. Buat proyek sendiri darinya, lalu ganti nama modulnya.
 
