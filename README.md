@@ -39,6 +39,7 @@ Repo ini adalah **template repository**. Jangan di-import sebagai library. Buat 
 | `PRIVATEKEY`, `PUBLICKEY` | Ya | Pasangan key PASETO untuk token login |
 | `MONGOSTRING` | Jika memakai MongoDB | Connection string MongoDB |
 | `PORT` | Tidak | Port server lokal/VPS, default `3000`. Di Cloud Functions port diatur otomatis |
+| `IP` | Tidak | Alamat IP untuk listen. Kosong = semua interface. Diisi otomatis oleh hosting seperti alwaysdata. IPv6 didukung |
 | `ALLOWED_ORIGINS` | Tidak | Origin CORS dipisah koma. Default: daftar di `config/cors.go` |
 | `DEMO_USER`, `DEMO_PASSWORD` | Tidak | Mengaktifkan login demo di `POST /login`. Jika salah satu kosong, login dibalas `503`. **Jangan diisi di produksi**: ganti `controller.Login` dengan pengecekan user di database |
 

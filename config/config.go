@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -24,7 +25,7 @@ var (
 // SetEnv dengan protection untuk multiple calls
 func SetEnv() {
 	once.Do(func() {
-		Port = portFromEnv(os.Getenv("PORT"))
+		Port = listenAddr(os.Getenv("IP"), os.Getenv("PORT"))
 		MongoString = os.Getenv("MONGOSTRING")
 		PrivateKey = os.Getenv("PRIVATEKEY")
 		PublicKey = os.Getenv("PUBLICKEY")
@@ -36,14 +37,19 @@ func SetEnv() {
 	})
 }
 
-// portFromEnv mengubah nilai env PORT ("8080" atau ":8080") menjadi alamat listen.
-func portFromEnv(p string) string {
-	p = strings.TrimSpace(p)
-	if p == "" {
-		p = DefaultPort
+// listenAddr menyusun alamat listen dari env IP dan PORT.
+//
+//	IP kosong, PORT kosong   -> ":3000" (semua interface)
+//	IP kosong, PORT "8080"   -> ":8080"
+//	IP "127.1.2.3"           -> "127.1.2.3:8080"
+//	IP "::1" atau "[::1]"    -> "[::1]:8080"
+//
+// IP dibutuhkan di hosting yang memberi alamat khusus per akun, misalnya alwaysdata.
+func listenAddr(ip, port string) string {
+	ip = strings.Trim(strings.TrimSpace(ip), "[]")
+	port = strings.TrimPrefix(strings.TrimSpace(port), ":")
+	if port == "" {
+		port = DefaultPort
 	}
-	if !strings.HasPrefix(p, ":") {
-		p = ":" + p
-	}
-	return p
+	return net.JoinHostPort(ip, port)
 }

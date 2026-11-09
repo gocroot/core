@@ -16,7 +16,7 @@ import (
 func main() {
 	config.SetEnv()
 	log.Println("Cek Environment Variabel")
-	log.Println("PORT        :", config.Port)
+	log.Println("LISTEN      :", config.Port)
 	log.Println("PRIVATEKEY  :", status(config.PrivateKey))
 	log.Println("PUBLICKEY   :", status(config.PublicKey))
 	log.Println("MONGOSTRING :", status(config.MongoString))

@@ -7,16 +7,20 @@ import (
 	"testing"
 )
 
-func TestPortFromEnv(t *testing.T) {
-	cases := map[string]string{
-		"":       ":3000",
-		"8080":   ":8080",
-		":9000":  ":9000",
-		" 8081 ": ":8081",
+func TestListenAddr(t *testing.T) {
+	cases := []struct{ ip, port, want string }{
+		{"", "", ":3000"},
+		{"", "8080", ":8080"},
+		{"", ":9000", ":9000"},
+		{" ", " 8081 ", ":8081"},
+		{"127.1.2.3", "8100", "127.1.2.3:8100"},
+		{"::1", "8100", "[::1]:8100"},
+		{"[::1]", "8100", "[::1]:8100"},
+		{"2001:db8::5", "", "[2001:db8::5]:3000"},
 	}
-	for in, want := range cases {
-		if got := portFromEnv(in); got != want {
-			t.Errorf("portFromEnv(%q) = %q, want %q", in, got, want)
+	for _, c := range cases {
+		if got := listenAddr(c.ip, c.port); got != c.want {
+			t.Errorf("listenAddr(%q, %q) = %q, want %q", c.ip, c.port, got, c.want)
 		}
 	}
 }
