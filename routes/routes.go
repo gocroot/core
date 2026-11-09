@@ -20,6 +20,13 @@ func HandleRoutes(w http.ResponseWriter, r *http.Request) {
 		case "/login":
 			controller.GetUserName(w, r)
 		default:
+			// Route dengan path parameter ditaruh di default, setelah semua path statis.
+			// Contoh /data/user/{id} (ambil nilainya di controller dengan PathParam yang sama):
+			//
+			//	if _, ok := controller.PathParam(r.URL.Path, "/data/user/"); ok {
+			//		controller.GetUserByID(w, r)
+			//		return
+			//	}
 			controller.NotFound(w, r)
 		}
 
