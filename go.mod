@@ -6,7 +6,7 @@ toolchain go1.27.3
 
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.9.2
-	github.com/whatsauth/watoken v0.1.9
+	github.com/whatsauth/watoken v0.1.10
 )
 
 require (
