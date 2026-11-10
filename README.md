@@ -74,7 +74,7 @@ cloudflared tunnel --url 127.0.0.1:3000
 
 ## Graceful Shutdown
 
-`run/main.go` menangani `SIGINT` (Ctrl+C), `SIGTERM` (`systemctl`, `docker stop`, Cloud Run, Render, Fly.io), dan `SIGHUP` (*Hot restart* di panel hosting seperti alwaysdata). Request yang sedang berjalan diberi waktu selesai maksimal 8 detik (`masaTutup`), lalu proses dipastikan keluar supaya binary baru benar-benar dipakai. Jangan hapus penanganan sinyal ini. Panduan lengkap: [Berhenti dengan Rapi](https://gocroot.if.co.id/deploy/#berhenti-dengan-rapi-graceful-shutdown).
+`run/main.go` menangani `SIGINT` (Ctrl+C), `SIGTERM` (`systemctl`, `docker stop`, Cloud Run, Render, Fly.io), dan `SIGHUP`, `SIGUSR1`, `SIGUSR2` (*Hot restart* di panel hosting; di alwaysdata sinyalnya bisa dipilih di antara ketiganya). Daftar sinyal ada di `run/sinyal_unix.go` (Windows tidak punya `SIGUSR1/2`, jadi memakai `run/sinyal_other.go`). Request yang sedang berjalan diberi waktu selesai maksimal 8 detik (`masaTutup`), lalu proses dipastikan keluar supaya binary baru benar-benar dipakai. Jangan hapus penanganan sinyal ini. Panduan lengkap: [Berhenti dengan Rapi](https://gocroot.if.co.id/deploy/#berhenti-dengan-rapi-graceful-shutdown).
 
 ## Versi yang Sedang Berjalan
 

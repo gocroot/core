@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gocroot/core/config"
@@ -45,13 +44,12 @@ func main() {
 		Penutupan berbatas waktu menutup kedua celah itu: request yang sedang
 		jalan diberi kesempatan selesai, dan prosesnya dipastikan keluar.
 
-		SIGINT  : Ctrl+C saat go run ./run
-		SIGTERM : systemctl stop/restart, docker stop, Cloud Run, Render, Fly.io
-		SIGHUP  : fitur "Hot restart" hosting (misalnya alwaysdata). Tanpa
-		          penanganan, SIGHUP membunuh proses Go seketika.
+		Daftar sinyal ada di sinyal_unix.go: SIGINT, SIGTERM, dan SIGHUP,
+		SIGUSR1, SIGUSR2 (pilihan sinyal "Hot restart" di panel hosting
+		seperti alwaysdata).
 	*/
 	berhenti := make(chan os.Signal, 1)
-	signal.Notify(berhenti, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(berhenti, sinyalBerhenti...)
 
 	gagal := make(chan error, 1)
 	go func() {

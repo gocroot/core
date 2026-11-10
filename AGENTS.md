@@ -32,9 +32,9 @@ Aturan untuk AI coding agent (Antigravity, Claude Code, Codex, Cursor, Copilot, 
 
 ## Berhenti dengan rapi (sinyal)
 
-- `run/main.go` menangani `SIGINT`, `SIGTERM`, dan **`SIGHUP`** dengan `signal.Notify`, lalu `srv.Shutdown` dengan batas waktu `masaTutup` (8 detik), dan `srv.Close()` jika batas habis. **Jangan hapus penanganan sinyal ini, dan jangan menghapus `SIGHUP`**: fitur *Hot restart* hosting (misalnya alwaysdata) mengirim `SIGHUP`, yang tanpa penanganan membunuh proses Go seketika.
+- `run/main.go` menangani `SIGINT`, `SIGTERM`, **`SIGHUP`, `SIGUSR1`, dan `SIGUSR2`** dengan `signal.Notify(berhenti, sinyalBerhenti...)` (daftar per OS di `run/sinyal_unix.go` dan `run/sinyal_other.go`, karena Windows tidak punya `SIGUSR1/2`), lalu `srv.Shutdown` dengan batas waktu `masaTutup` (8 detik), dan `srv.Close()` jika batas habis. **Jangan hapus penanganan sinyal ini, dan jangan menghapus satu pun dari `SIGHUP`, `SIGUSR1`, `SIGUSR2`**: fitur *Hot restart* hosting mengirim salah satunya (di alwaysdata bisa dipilih), dan tanpa penanganan proses Go terbunuh seketika. Jangan menulis `syscall.SIGUSR1/2` di file tanpa build tag `unix`, karena build Windows akan gagal.
 - Jangan mengganti dengan `http.ListenAndServe` langsung tanpa shutdown. Proses yang terbunuh di tengah request bisa meninggalkan data separuh tertulis, dan proses yang tidak pernah keluar membuat binary baru tidak pernah dipakai.
-- Server atau worker baru yang berjalan lama (consumer antrean, job terjadwal) wajib memakai pola yang sama: tangkap ketiga sinyal, selesaikan pekerjaan yang sedang jalan dengan batas waktu, lalu pastikan proses keluar.
+- Server atau worker baru yang berjalan lama (consumer antrean, job terjadwal) wajib memakai pola yang sama: tangkap semua sinyal di `sinyalBerhenti`, selesaikan pekerjaan yang sedang jalan dengan batas waktu, lalu pastikan proses keluar.
 - `masaTutup` harus lebih pendek dari jeda sebelum `SIGKILL` (Docker dan Cloud Run 10 detik).
 
 ## Versi dan deploy
