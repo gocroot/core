@@ -1,6 +1,8 @@
 # core
 Core Backend Skeleton dari [GoCroot](https://gocroot.if.co.id/). Dokumentasi lengkap: **https://gocroot.if.co.id/**
 
+Memakai AI coding agent? Aturan proyek (PASETO bukan JWT, `net/http` tanpa framework, dsb.) ada di [`AGENTS.md`](AGENTS.md), dibaca otomatis oleh Antigravity, Codex, Cursor, Copilot, dan Claude Code (lewat `CLAUDE.md`).
+
 Repo ini adalah **template repository**. Jangan di-import sebagai library. Buat proyek sendiri darinya, lalu ganti nama modulnya.
 
 ## Mulai Proyek Baru
