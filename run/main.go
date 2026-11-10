@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -31,26 +32,56 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	// Graceful shutdown: saat SIGINT/SIGTERM (Ctrl+C, systemctl stop/restart),
-	// request yang sedang berjalan diberi waktu selesai sebelum server berhenti.
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	/*
+		Berhenti dengan rapi saat supervisor hosting mengirim sinyal.
 
+		Tanpa penanganan sinyal, proses berhenti seketika di tengah request
+		yang sedang berjalan, sehingga data bisa terputus separuh tertulis.
+		Sebaliknya, proses yang tidak pernah benar-benar keluar akan terus
+		melayani dengan kode lama meski binary baru sudah terunggah:
+		"restart" dilaporkan berhasil, tetapi tidak ada yang berubah.
+
+		Penutupan berbatas waktu menutup kedua celah itu: request yang sedang
+		jalan diberi kesempatan selesai, dan prosesnya dipastikan keluar.
+
+		SIGINT  : Ctrl+C saat go run ./run
+		SIGTERM : systemctl stop/restart, docker stop, Cloud Run, Render, Fly.io
+		SIGHUP  : fitur "Hot restart" hosting (misalnya alwaysdata). Tanpa
+		          penanganan, SIGHUP membunuh proses Go seketika.
+	*/
+	berhenti := make(chan os.Signal, 1)
+	signal.Notify(berhenti, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	gagal := make(chan error, 1)
 	go func() {
 		log.Println("Listening on", config.Port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			gagal <- err
 		}
 	}()
 
-	<-ctx.Done()
-	log.Println("Shutting down...")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	select {
+	case err := <-gagal:
+		// Misalnya port sudah dipakai: keluar dengan kode error supaya supervisor tahu.
+		log.Fatal(err)
+	case s := <-berhenti:
+		log.Printf("sinyal %v diterima, menutup dengan rapi (maks %s)", s, masaTutup)
+	}
+	signal.Stop(berhenti)
+
+	ctx, cancel := context.WithTimeout(context.Background(), masaTutup)
 	defer cancel()
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Println("Shutdown error:", err)
+	if err := srv.Shutdown(ctx); err != nil {
+		// Batas waktu habis: koneksi yang tersisa ditutup paksa, proses tetap keluar.
+		log.Println("penutupan tidak tuntas:", err)
+		srv.Close()
 	}
 }
+
+// masaTutup adalah batas waktu request yang sedang berjalan untuk selesai saat
+// server dihentikan. Harus lebih pendek dari jeda sebelum supervisor mengirim
+// SIGKILL (systemd 90 detik, Docker dan Cloud Run 10 detik secara default).
+const masaTutup = 8 * time.Second
 
 // status hanya menampilkan apakah env terisi, tanpa membocorkan nilainya ke log.
 func status(v string) string {

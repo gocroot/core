@@ -72,6 +72,10 @@ winget install --id Cloudflare.cloudflared
 cloudflared tunnel --url 127.0.0.1:3000
 ```
 
+## Graceful Shutdown
+
+`run/main.go` menangani `SIGINT` (Ctrl+C), `SIGTERM` (`systemctl`, `docker stop`, Cloud Run, Render, Fly.io), dan `SIGHUP` (*Hot restart* di panel hosting seperti alwaysdata). Request yang sedang berjalan diberi waktu selesai maksimal 8 detik (`masaTutup`), lalu proses dipastikan keluar supaya binary baru benar-benar dipakai. Jangan hapus penanganan sinyal ini. Panduan lengkap: [Berhenti dengan Rapi](https://gocroot.if.co.id/deploy/#berhenti-dengan-rapi-graceful-shutdown).
+
 ## Token PASETO
 
 Login di core menerbitkan token [PASETO](https://paseto.io) v4.public (Ed25519) lewat [whatsauth/watoken](https://github.com/whatsauth/watoken), bukan JWT:

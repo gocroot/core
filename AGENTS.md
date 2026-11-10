@@ -30,6 +30,13 @@ Aturan untuk AI coding agent (Antigravity, Claude Code, Codex, Cursor, Copilot, 
 - NoSQL injection: jangan memasukkan `bson.M`/`map[string]any` hasil decode body request langsung ke filter. Decode ke struct bertipe jelas, lalu susun filter sendiri.
 - Login di `controller/auth.go` adalah demo (env `DEMO_USER`/`DEMO_PASSWORD`). Untuk produksi, ganti dengan pengecekan user di database; password disimpan sebagai hash (bcrypt/argon2), dibandingkan dengan fungsi hash tersebut.
 
+## Berhenti dengan rapi (sinyal)
+
+- `run/main.go` menangani `SIGINT`, `SIGTERM`, dan **`SIGHUP`** dengan `signal.Notify`, lalu `srv.Shutdown` dengan batas waktu `masaTutup` (8 detik), dan `srv.Close()` jika batas habis. **Jangan hapus penanganan sinyal ini, dan jangan menghapus `SIGHUP`**: fitur *Hot restart* hosting (misalnya alwaysdata) mengirim `SIGHUP`, yang tanpa penanganan membunuh proses Go seketika.
+- Jangan mengganti dengan `http.ListenAndServe` langsung tanpa shutdown. Proses yang terbunuh di tengah request bisa meninggalkan data separuh tertulis, dan proses yang tidak pernah keluar membuat binary baru tidak pernah dipakai.
+- Server atau worker baru yang berjalan lama (consumer antrean, job terjadwal) wajib memakai pola yang sama: tangkap ketiga sinyal, selesaikan pekerjaan yang sedang jalan dengan batas waktu, lalu pastikan proses keluar.
+- `masaTutup` harus lebih pendek dari jeda sebelum `SIGKILL` (Docker dan Cloud Run 10 detik).
+
 ## Struktur dan entry point
 
 - Dua entry point, logika inisialisasi tetap di `config`: `gcf.go` (Google Cloud Run functions, fungsi `WebHook`) dan `run/main.go` (server lokal, VPS, web hosting, Docker).
