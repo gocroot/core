@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gocroot/core/config"
 	"github.com/gocroot/core/models"
 )
 
@@ -27,6 +28,12 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, models.Response{Status: "success", Message: "Welcome"})
+}
+
+// GetVersion menampilkan versi kode yang sedang berjalan (SHA commit).
+// Dipakai workflow deploy untuk memastikan proses baru sudah melayani.
+func GetVersion(w http.ResponseWriter, r *http.Request) {
+	WriteJSON(w, http.StatusOK, models.Response{Status: "success", Message: config.Version})
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request) {

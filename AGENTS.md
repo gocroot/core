@@ -23,7 +23,7 @@ Aturan untuk AI coding agent (Antigravity, Claude Code, Codex, Cursor, Copilot, 
 
 ## Konfigurasi dan keamanan
 
-- Semua konfigurasi dari env var yang dibaca di `config.SetEnv()`: `PRIVATEKEY`, `PUBLICKEY`, `MONGOSTRING`, `PORT`, `IP`, `ALLOWED_ORIGINS`. Jangan hardcode secret, key, atau connection string.
+- Semua konfigurasi dari env var yang dibaca di `config.SetEnv()`: `PRIVATEKEY`, `PUBLICKEY`, `MONGOSTRING`, `PORT`, `IP`, `ALLOWED_ORIGINS`, `VERSION` (opsional). Jangan hardcode secret, key, atau connection string.
 - Jangan mencetak nilai secret ke log. Cetak status `terisi`/`KOSONG` saja.
 - Jangan `panic`/`log.Fatal` di `SetEnv()` atau `init()` (Cloud Functions gagal start). Simpan error-nya, lalu balas `503` dari endpoint yang membutuhkannya.
 - MongoDB memakai `github.com/gocroot/mgdb`, koneksi dibuat sekali di `SetEnv()` (contoh di `README.md`, bagian Database Connection).
@@ -36,6 +36,12 @@ Aturan untuk AI coding agent (Antigravity, Claude Code, Codex, Cursor, Copilot, 
 - Jangan mengganti dengan `http.ListenAndServe` langsung tanpa shutdown. Proses yang terbunuh di tengah request bisa meninggalkan data separuh tertulis, dan proses yang tidak pernah keluar membuat binary baru tidak pernah dipakai.
 - Server atau worker baru yang berjalan lama (consumer antrean, job terjadwal) wajib memakai pola yang sama: tangkap ketiga sinyal, selesaikan pekerjaan yang sedang jalan dengan batas waktu, lalu pastikan proses keluar.
 - `masaTutup` harus lebih pendek dari jeda sebelum `SIGKILL` (Docker dan Cloud Run 10 detik).
+
+## Versi dan deploy
+
+- `GET /version` menampilkan `config.Version` (SHA commit). Workflow deploy wajib memverifikasi `GET /version` = `$GITHUB_SHA` setelah restart, karena restart bisa dilaporkan berhasil padahal proses lama masih melayani.
+- `config.Version` hanya boleh berisi SHA commit. **Jangan menanam secret (`MONGOSTRING`, `PRIVATEKEY`, dsb.) ke binary lewat `-ldflags -X`.** Secret selalu lewat env di hosting.
+- Contoh workflow per hosting ada di https://gocroot.if.co.id/deploy/ (action di-pin ke SHA, `permissions: contents: read`, test sebelum deploy, binary diunggah sebagai `api.new` lalu `mv`).
 
 ## Struktur dan entry point
 

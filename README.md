@@ -76,6 +76,19 @@ cloudflared tunnel --url 127.0.0.1:3000
 
 `run/main.go` menangani `SIGINT` (Ctrl+C), `SIGTERM` (`systemctl`, `docker stop`, Cloud Run, Render, Fly.io), dan `SIGHUP` (*Hot restart* di panel hosting seperti alwaysdata). Request yang sedang berjalan diberi waktu selesai maksimal 8 detik (`masaTutup`), lalu proses dipastikan keluar supaya binary baru benar-benar dipakai. Jangan hapus penanganan sinyal ini. Panduan lengkap: [Berhenti dengan Rapi](https://gocroot.if.co.id/deploy/#berhenti-dengan-rapi-graceful-shutdown).
 
+## Versi yang Sedang Berjalan
+
+`GET /version` menampilkan SHA commit kode yang sedang melayani, misalnya `{"status":"success","message":"6c7bc34..."}`. Workflow deploy membandingkannya dengan commit yang baru di-push, karena restart bisa dilaporkan berhasil padahal proses lama masih melayani.
+
+Sumber versi (`config.Version`), dari yang paling diutamakan:
+
+1. `-ldflags "-X <modul>/config.Version=..."` saat build
+2. env `VERSION` (dipakai di Cloud Functions, karena Google membangun kode tanpa folder `.git`)
+3. revisi git yang ditanam otomatis oleh `go build` (ditambah `-dirty` jika ada perubahan yang belum di-commit)
+4. `dev`
+
+Build di GitHub Actions setelah `actions/checkout` sudah otomatis membawa SHA commit, jadi tidak perlu langkah tambahan. Hanya SHA commit yang boleh masuk ke sini. **Jangan menanam secret ke binary lewat `-ldflags -X`**: siapa pun yang mendapat file binary bisa membacanya dengan `strings`.
+
 ## Token PASETO
 
 Login di core menerbitkan token [PASETO](https://paseto.io) v4.public (Ed25519) lewat [whatsauth/watoken](https://github.com/whatsauth/watoken), bukan JWT:
@@ -166,15 +179,21 @@ jobs:
             --memory=256Mi \
             --min-instances=0 \
             --max-instances=100 \
-            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',PRIVATEKEY='${{ secrets.PRIVATEKEY }}',PUBLICKEY='${{ secrets.PUBLICKEY }}',ALLOWED_ORIGINS='${{ secrets.ALLOWED_ORIGINS }}' \
+            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',PRIVATEKEY='${{ secrets.PRIVATEKEY }}',PUBLICKEY='${{ secrets.PUBLICKEY }}',ALLOWED_ORIGINS='${{ secrets.ALLOWED_ORIGINS }}',VERSION='${{ github.sha }}' \
             --quiet
 
       - name: Verify deployment
         run: |
           URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} --region=${{ env.REGION }} --format="value(serviceConfig.uri)")
           echo "Function URL: $URL"
-          # Endpoint "/" pada core mengembalikan {"status":"success","message":"Welcome"}
-          curl -fsS "$URL/"
+          # GET /version harus menampilkan commit yang baru di-push (env VERSION di atas)
+          for i in $(seq 1 10); do
+            live=$(curl -fsS -m 10 "$URL/version" | sed -n 's/.*"message":"\([^"]*\)".*/\1/p' || true)
+            echo "percobaan $i: function melayani '${live:-tidak diketahui}'"
+            [ "$live" = "$GITHUB_SHA" ] && { echo "versi baru sudah hidup"; exit 0; }
+            sleep 6
+          done
+          echo "Deploy selesai, tetapi function belum melayani versi baru."; exit 1
 
       - name: Cleaning Artifact Registry
         run: gcloud artifacts repositories delete gcf-artifacts --location=${{ env.REGION }} --quiet

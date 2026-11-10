@@ -31,6 +31,7 @@ func SetEnv() {
 		PublicKey = os.Getenv("PUBLICKEY")
 		DemoUser = os.Getenv("DEMO_USER")
 		DemoPassword = os.Getenv("DEMO_PASSWORD")
+		setVersion()
 		if origins := os.Getenv("ALLOWED_ORIGINS"); origins != "" {
 			SetAllowedOrigins(strings.Split(origins, ","))
 		}

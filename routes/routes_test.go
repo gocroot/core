@@ -48,11 +48,23 @@ func TestRoutes(t *testing.T) {
 		{http.MethodPost, "/tidak-ada", http.StatusNotFound},
 		{http.MethodPut, "/", http.StatusMethodNotAllowed},
 		{http.MethodDelete, "/login", http.StatusMethodNotAllowed},
+		{http.MethodGet, "/version", http.StatusOK},
+		{http.MethodPost, "/version", http.StatusNotFound},
 	}
 	for _, c := range cases {
 		if code, _ := do(t, c.method, c.path, "", nil); code != c.wantCode {
 			t.Errorf("%s %s = %d, want %d", c.method, c.path, code, c.wantCode)
 		}
+	}
+}
+
+func TestVersion(t *testing.T) {
+	old := config.Version
+	t.Cleanup(func() { config.Version = old })
+	config.Version = "abc123"
+	code, resp := do(t, http.MethodGet, "/version", "", nil)
+	if code != http.StatusOK || resp.Status != "success" || resp.Message != "abc123" {
+		t.Errorf("GET /version = %d %+v, want 200 success abc123", code, resp)
 	}
 }
 
